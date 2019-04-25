@@ -23,6 +23,10 @@ const videoSchema = new Schema({
       type:String,
       required:true,
   },
+  video_thumbnail:{
+    type:String,
+    default:''
+  },
   status:{
       type:Number,
       default:1

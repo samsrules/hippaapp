@@ -1,26 +1,39 @@
 const educationVideo = require('./../models/educationVideo_m');
 
-_ = require('lodash'),
+_ = require('lodash');
+
+var youtubeThumbnail = require('youtube-thumbnail');
+
 
 
 module.exports={
     videoSave : async (req, res) =>{
-       let video_details = {
-        user_id:req.user._id,
-        video_title : req.body.video_title,
-        video_description: req.body.video_description,
-        video_id : req.body.video_id,
-        video_url : req.body.video_url,
-       }
-       console.log(video_details);
-      var videos = new educationVideo(video_details)
-      videos.save(function(err, result){
-          if(err){
-            res.json({status:0, message: 'Oops Something went wrong.', err})
-          } else {
-            res.json({status:1, message:'video Added Succesfully'});
-          }
-      })
+      let video_url = req.body.video_url;
+      if(video_url) {
+          
+        var thumbnail = youtubeThumbnail(video_url);
+        
+        let video_details = {
+         user_id:req.user._id,
+         video_title : req.body.video_title,
+         video_description: req.body.video_description,
+         video_id : req.body.video_id,
+         video_url : video_url,
+         video_thumbnail:thumbnail.high.url
+        }
+        console.log(video_details);
+       var videos = new educationVideo(video_details)
+       videos.save(function(err, result){
+           if(err){
+             res.json({status:0, message: 'Oops Something went wrong.', err})
+           } else {
+             res.json({status:1, message:'video Added Succesfully'});
+           }
+       })
+      } else {
+        res.json({status:0, message:'Missing Parameters!!!'});
+      }
+        
     
     },
 
@@ -35,7 +48,6 @@ module.exports={
     } ,
 
     videoDetail : async (req, res) => {
-    
         let video_id = req.body.video_id;
        if(video_id) {
         let detail = await educationVideo.find({_id:video_id});
