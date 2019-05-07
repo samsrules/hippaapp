@@ -7,5 +7,10 @@ const provider = require('../controllers/contactProvider');
 
 
 //router.post('conatctprovider', provider.contactProvider )
-router.get('/contactprovider',authenticate, provider.contactProvider);
+router.post('/contactprovider',authenticate, provider.contactProvider);
+
+router.post('/invite_calling',authenticate, provider.inviteCalling);
+
+router.post('/reject_calling',authenticate, provider.rejectCalling);
+
 module.exports = router;

@@ -33,6 +33,8 @@ const user = require('./App/routes/users-r');
 const contact = require('./App/routes/contact_provider_r');
 const patient = require('./App/routes/patient_refferel_r');
 const education = require('./App/routes/education_video_r');
+const servey = require('./App/routes/servey_r');
+const admin = require('./App/routes/admin_r');
 // const feedback = require('./App/routes/feedback_r');
 //  const settings = require('./App/routes/settings_r');
 // const messageChat = require('./App/routes/message_r');
@@ -64,15 +66,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 // app.use(formValidator.validate);
 
 //Admin
-// console.log(52434);
+app.use('/admin', admin);
 
-
-// app.use('/', indexRouter);
 // Users
 app.use('/user', user);
 app.use('/contact', contact);
 app.use('/patient', patient);
 app.use('/education', education);
+app.use('/servey', servey);
 
 // My cron Jobs 
 

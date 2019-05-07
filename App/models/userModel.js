@@ -38,14 +38,22 @@ const usersSchema = new Schema({
   specialist:{
      type:String,
      default:''
-  },  
+  },
+  about:{
+    type:String,
+    default:''
+  },
   credentials: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    //required: true,
     ref:'Credential'
   },
   profilePic: {
     type: String,
+  },
+  meeting_room:{
+    type: String,
+    default:'',
   },
   password: {
     type: String

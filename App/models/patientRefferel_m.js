@@ -3,8 +3,9 @@ const Schema = mongoose.Schema;
 
 const patientRefferelSchema = new Schema({
     user_id:{
-      type:String,
-      required:true
+      type:mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
     },
    patient_name:{
       type:String,

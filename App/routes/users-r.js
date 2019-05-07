@@ -36,14 +36,18 @@ router.post('/upload_documents', authenticate, upload.single('documents'), user.
 // });
 
 router.post('/signin', user.signIn);
+
 router.delete('/logout', authenticate, user.logOut);
+
 router.post('/verify_signup', user.verifyOtp);
+
 router.post('/resend_otp', user.resentOtp);
 
 router.post('/forgot_password', user.forgotPassword);
-router.post('/verify_otp', user.verifyOtpFP);
-router.post('/update_password', user.updateForgotPassword);
 
+router.post('/verify_otp', user.verifyOtpFP);
+
+router.post('/update_password', user.updateForgotPassword);
 
 router.get('/user_profile', authenticate, user.userProfile);
 
@@ -55,38 +59,13 @@ router.get('/credantials', user.credentialSearch);
 
 router.post('/conatactprovider_save',upload.single('profilePic'), user.conatactProviderSave);
 
-
-
-// router.post('/conatactprovider_save',authenticate, (req, res)=>{
-//     console.log('asfdasf')
-// });
-
-
-// router.post('/conatactprovider_save', authenticate, (req, res) => {
-//     console.log(req.body);
-//     console.log(req.files);
-//     //user.updateProfile;
-// });
-
 router.delete('/delete_document', authenticate, user.deleteDocument);
-
-
 
 router.post('/update_device_token', authenticate, user.updateDeviceToken);
 
+router.post('/send_notifications', user.sendNotifications);
 
-
-
-/*router.post('/update_profile', authenticate, cpUpload, (req, res) => {
-    console.log(req.body);
-    console.log(req.files);
-    user.updateProfile;
-});*/
-
-/*router.post('/signin', (req, res)=> {
-    res.send('Inside Signin');
-    console.log('Inside Signin');
-});*/
+router.post('/notifications', authenticate, user.getNotifcationList);
 
 router.get('', (req, res)=> {
     res.send('You are at right place, Welcome to Hippa App');

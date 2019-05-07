@@ -1,5 +1,6 @@
 const User = require('./../models/userModel'), //Model
  Credential_type = require('../models/credential_m'); //Model
+ Notification = require('../models/notifications_m');
 
  bcrypt = require('bcrypt'),
  jwt = require('jsonwebtoken'),
@@ -11,6 +12,10 @@ const User = require('./../models/userModel'), //Model
 
 const nodemailer = require('nodemailer');
 const {ObjectID} = require('mongodb');
+
+var FCM = require('fcm-node');
+var serverKey = 'AAAALgE4Pu4:APA91bG7aGM3xFLqIetlsc-BOwx_vF91X8PA5rv4wgu0IFfVecr1CnxQaevFyX6tiPQ0usQmqJKQSpcnBOMuTUoujl-uV5a9gNetTlHa9rtNzFFLmknh6lC-ZyNL2xC9BJQ-NNABluED'; //put your server key here
+var fcm = new FCM(serverKey);
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -138,6 +143,7 @@ userRegistration : async (req, res) => {
       html:
       '<!DOCTYPE html><head><title>Internal_email-29</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head><body style="margin:0; padding:0;" bgcolor="#eaeced"><table style="min-width:320px;" width="100%" cellspacing="0" cellpadding="0" bgcolor="#eaeced"><tr><td class="hide"><table width="600" cellpadding="0" cellspacing="0" style="width:600px !important;"><tr><td style="min-width:600px; font-size:0; line-height:0;">&nbsp;</td></tr></table></td></tr><tr><td class="wrapper" style="padding:0 10px;"><table data-module="module-3" data-thumb="thumbnails/03.png" width="100%" cellpadding="0" cellspacing="0"><tr><td data-bgcolor="bg-module" bgcolor="#eaeced"><table class="flexible" width="600" align="center" style="margin:0 auto;background: white;margin-top:30px;" cellpadding="0" cellspacing="0"><tr><td class="img-flex"><hr style="border:2px solid #00bbf2;width:500px; border-radius:30px;"></td></tr><tr><td data-bgcolor="bg-block" class="holder" style="padding:20px 50px 5px;" bgcolor="#ffffff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td data-color="title" data-size="size title" data-min="20" data-max="40" data-link-color="link title color" data-link-style="text-decoration:none; color:#292c34;" class="title" style="font:30px/33px Arial, Helvetica, sans-serif; color:#292c34; padding:0 0 24px;"><h6 style="margin:0px;">Welcome to Hippa App!</h6><p style="font-size: 15px; line-height:20px;">It&apos;s official.>Register with Hippa App</a>  Your OTP is '+otp+'</p><p style="font-size: 15px; line-height:20px;"><br/>Thanks<br/>Team Hippa   </p></td></tr></table></td></tr><tr><td height="28"></td></tr></table></td></tr></table></td></tr></table></body></html>', 
   }
+
     transporter.sendMail(mailOptions).then(function(info) {
       resolve(info);
       console.log(info);
@@ -147,12 +153,9 @@ userRegistration : async (req, res) => {
         console.log('err')
     });
   });
-      
-      
-      if (allData) return res.status(200).send({ status: 0, message:"Email Id already exist." });
+  
       res.json({message:"OTP Genearted Succesfully and also sent to mail.",status: 1,otp:otp,userInfo:userData});  
-      
-
+    
     }
     
   });
@@ -175,7 +178,7 @@ verifyOtp : async (req, res) => {
         credentials: req.body.credentials,
         password: hash,
         email:req.body.email,
-        type:1
+        type:0
        }
        
      var userDataInfo = {};  
@@ -200,7 +203,7 @@ verifyOtp : async (req, res) => {
 		        credentials: req.body.credentials,
 		        password: hash,
 		        email:req.body.email,
-		        type:1
+		        type:0
 		       }
 
 
@@ -259,34 +262,40 @@ verifyOtpFP : async (req, res) => {
 }, // Verify OTP Closing
 
 resentOtp : async (req, res) => {
-	if(!req.body.email && !req.body._id) return res.json({
-      message: "Parameter missing or invalid, Please try again",
-      status: 0
-    });
-  let email = req.body.email;
-  let userid = req.body._id;
-  var user = new User();
-  var otp = await user.generateOTP();
-  var userData = {
-    otp:otp,
-    email:email
+  
+  var user = new User({
+    email:req.body.email
+  });
+  user = await user.fetchByEmail();
+  if (!user) return res.json({ status: 200, message:"This Email is not registered." });
+
+  try {
+
+    var otp = await user.generateOTP();
+    user.otp = otp;
+     
+   var html_body ='';
+    html_body += '<!DOCTYPE html><head><title>Internal_email-29</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head><body style="margin:0; padding:0;" bgcolor="#eaeced"><table style="min-width:320px;" width="100%" cellspacing="0" cellpadding="0" bgcolor="#eaeced"><tr><td class="hide"><table width="600" cellpadding="0" cellspacing="0" style="width:600px !important;"><tr><td style="min-width:600px; font-size:0; line-height:0;">&nbsp;</td></tr></table></td></tr><tr><td class="wrapper" style="padding:0 10px;"><table data-module="module-3" data-thumb="thumbnails/03.png" width="100%" cellpadding="0" cellspacing="0"><tr><td data-bgcolor="bg-module" bgcolor="#eaeced"><table class="flexible" width="600" align="center" style="margin:0 auto;background: white;margin-top:30px;" cellpadding="0" cellspacing="0"><tr><td class="img-flex"><hr style="border:2px solid #00bbf2;width:500px; border-radius:30px;"></td></tr><tr><td data-bgcolor="bg-block" class="holder" style="padding:20px 50px 5px;" bgcolor="#ffffff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td data-color="title" data-size="size title" data-min="20" data-max="40" data-link-color="link title color" data-link-style="text-decoration:none; color:#292c34;" class="title" style="font:30px/33px Arial, Helvetica, sans-serif; color:#292c34; padding:0 0 24px;"><h6 style="margin:0px;">Welcome to Hippa App!</h6><p style="font-size: 15px; line-height:20px;">It&apos;s official.>Forgot password with Hippa App</a>  Your OTP is '+otp+'</p><p style="font-size: 15px; line-height:20px;"><br/>Thanks<br/>Team Hippa   </p></td></tr></table></td></tr><tr><td height="28"></td></tr></table></td></tr></table></td></tr></table></body></html>';
+
+  var subject = 'Resend otp';
+  var to = req.body.email;
+  var from = '"Hippa App" <info@hippa.com>';
+  
+
+   await sendmail(subject, to, from, html_body)
+
+    return res.json({message:"We have sent an OTP to your Email id. Please verify.",status:1,otp:otp});
+  } catch (error) {
+      console.log(error);
+      return res.json({message:"Something went wrong in sending OTP.Please try after sometime.",status:0, description:error.message});
   }
-  try{
-    let updateOtp = await User.findOneAndUpdate({_id:userid}, {$set:userData});
-    if(!updateOtp) return res.json({
-      message: "You are trying with wrong user Id. please try with correct user Id.",
-      status: 0
-    });
-    var msg = 'Use this OTP: '+otp+' to verify your registration with Hippa App.';
-    // await user.sendMessage(mob,msg);
-    res.status(200).send({ status: 1, message:"Otp resent successfully.", otp:otp});
-  } catch(err){
-    res.status(200).send({ status: 0, message:"Unable to send OTP.", description: err.message});  
-  }
+
+  
 
 }, // Resend OTP Closing
 
 forgotPassword : async (req, res) => {
+
   var user = new User({
     email:req.body.email
   });
@@ -306,10 +315,9 @@ forgotPassword : async (req, res) => {
   var from = '"Hippa App" <info@hippa.com>';
   
 
-  await sendmail(subject, to, from, html_body)
+     await sendmail(subject, to, from, html_body)
 
-  
-    return res.json({message:"We have sent an OTP to your Email id. Please verify.",status:1});
+    return res.json({message:"We have sent an OTP to your Email id. Please verify.",status:1,otp:otp});
   } catch (error) {
       console.log(error);
       return res.json({message:"Something went wrong in sending OTP.Please try after sometime.",status:0, description:error.message});
@@ -476,18 +484,18 @@ updateProfile : async (req, res) => {
     if(req.body.lastName) userData.lastName = req.body.lastName;
     if(req.body.credentials) userData.credentials= req.body.credentials;
     if(req.body.device_token) userData.deviceToken= req.body.device_token;
+    if(req.body.about) userData.about= req.body.about;
     if(req.body.user_id) userData.user_id = req.body.user_id
       
+       let da = await User.findByIdAndUpdate(user_id,userData,{new: true, runValidators: true})
        
-        if(user_id) {
-          await User.findByIdAndUpdate(user_id,userData,{new: true, runValidators: true});
-        }
-
-        let da = await User.find({_id:user_id}).populate('credentials',{credential_type:1});
-         
-       let userDetails =  await module.exports.getUserDetails(user_id);
+      if(da) {
+        res.json({status:1, message:'Your profile has been updated successfully.',user_info:da});
+    } else {
+      res.json({status:0, message:'Unable to update'});
+      } 
      
-    res.json({status:1, message:'Your profile has been updated successfully.',user_info:userDetails});
+   
   } catch (error) {
     res.json({status:0, message:'Unable to update', description:error.message});
   }
@@ -551,84 +559,139 @@ credentialSearch : async (req, res) => {
 },
 
 conatactProviderSave : async (req, res) => {
-   let fileName='';
-   
-  if(req.file){
-    console.log(req.file)
-     fileName = req.file.filename;
-  }
+  if(req.body.email) {
 
-  let contactDetails = {
-    firstName:req.body.firstName,
-    lastName:req.body.lastName,
-    phoneNumber:req.body.phoneNumber,
-    type:0,
-    providerStatus:req.body.providerStatus,
-    userStatus:1,
-    specialist:req.body.specialist,
-    profilePic:fileName
-  }
+  bcrypt.hash(req.body.password.toString(), 10, function(err, hash) {
+    if (err) throw err;
 
-console.log(contactDetails)
+    else{
+
+      if(req.file){
+        console.log(req.file)
+         fileName = req.file.filename;
+      }
+    
+      let contactDetails = {
+        firstName:req.body.firstName,
+        lastName:req.body.lastName,
+        phoneNumber:req.body.phoneNumber,
+        email:req.body.email,
+        about:req.body.about,
+        password:hash,
+        type:1,
+        providerStatus:req.body.providerStatus,
+        userStatus:1,
+        specialist:req.body.specialist,
+        profilePic:fileName
+      }
+    
  
+  
+      let user = new User(contactDetails);
+          
+  
+      user.save(function(err,result){  
+        if(err){
+         if (err.name === 'MongoError' && err.code === 11000){
+           return res.json({message:"This Email already exist. Please try with different Email.",status:0});
+          }
+        } else {
+         if(result._id){
+          try{
+            var token = jwt.sign({ id: result._id }, process.env.JWT_SECRET);
+            result.user_token = token;     
+            result.save().then(() => {});
+            res.json({status:1,message:'Contact Provider Register successfully.',payload:result})
+            
+          } catch(err) {
+            res.status(203).send({ status: 0, message:"Oops Something went wrong.", description:err });
+          }
+          
+         } else {
+           res.json({ status: 0, message:"Error" });
+         }
+        }
+      });
 
-  let user = new User(contactDetails);
-  user.save(function(err,result){
-     if(err){
-       console.log(err);
-       res.json({status:0,message:'Oops Something went wrong.',data:err});
-     } else{
-       res.json({status:1,message:'Contact Provider Register successfully.'})
-     }
-  })
+    }
+    
+  });
+} else {
+  res.json({status:0,message:'Missing Parameters.'})
+}
+
 
 },
 
+sendNotifications: async (req, res) =>{
 
-userSearch : async (req, res) => {
-  var keyword = req.body.search;
-  //var type = req.body.type;
-  try{ 
-     
-    var user = new User();
-        let users = await user.driverSearch(keyword);
-        // console.log(users.length)
-        var uniqueValues =[];
-        if(users.length>0) {
-            // Unique value get 
-          var uniqueData = Object.values(users.reduce((acc,cur)=>Object.assign(acc,{[cur._id]:cur}),{}));
-          var rating = rideRating();
-          for(var i = 0; i < uniqueData.length; i++) {
-            let rt= await rating.getAvgRatingUser(uniqueData[i]._id);
-            // driverDetails.rating = rt;
-            
-          let tempObj = {
-            _id:uniqueData[i]._id,
-            firstName:uniqueData[i].firstName,
-            lastName:uniqueData[i].lastName,
-            mobileNo:uniqueData[i].mobileNo
-          };
-          if(rt)
-          tempObj.ratings = rt;
-          if(uniqueData[i].profile_pic){
-            tempObj.profile_pic = process.env.UPLOADURL+uniqueData[i].profile_pic;
-          } else {
-          tempObj.profile_pic = uniqueData[i].profile_pic;
-          }
-          uniqueValues.push(tempObj);
-       }
-          
-          res.json({status:1, message:'Users Found.',profile_pic_url:process.env.UPLOADURL,data:uniqueValues});
-
+const fcm_token=req.body.token;
+  const alert_message=req.body.alert_message;
+   if(fcm_token && alert_message)
+   {
+    var data=req.body;
+    var message=alert_message;
+    var title="Hippa Push alerts";
+    var token=fcm_token;
+    var message = { 
+        to: token, 
+        notification: {
+            title: title, //title of notification 
+            body: message, //content of the notification
+            sound: "default",
+            icon: "https://dev.rymindr.com/images/logo_signup.png" //default notification icon
+        },
+        data: data //payload you want to send with your notification
+    };
+    fcm.send(message, function(err, response)
+    {
+        if (err) {
+            console.log("Notification not sent");
+            res.json({success:false})
         } else {
-          res.json({status:0, message:'Result Not Found.',data:uniqueValues});
+            console.log("Successfully sent with response: ", response);
+            res.json({success:true})
         }
-        
-  } catch(err){
-    res.json({status:0, message:'Oops something went wrong.', description:err.message});
+    });
+   } else {
+    response["data"] = {};
+    response["status"] = 0;
+    response["statuscode"] = 400;
+    response["message"] =
+      "Oops! Something went wrong. There was a problem with Hippa. Please try again";
+    return res.status(400).json(response);
   }
-  
-}, // User Search Closing
+
+
+},
+
+getNotifcationList: async(req, res) =>{
+    
+  if(req.body.user_id) {
+        
+
+         let result = await Notification.aggregate().project({
+          fieldExists:{$cond:[{$eq:["$notify_image", null]}, false, true]},
+          notify_image:{
+            $concat:[process.env.UPLOADURL,'', "$notify_image"]
+          },
+          title:"$title",
+          content:"$content",
+          createdAt:{ $dateToString: { format: "%d-%m-%Y", date: "$createdAt" } }
+         })
+         
+        
+
+    if(result) {
+      res.json({status:1, message:'Notification List', payload:result});
+    } else {
+      res.json({status:0, message:'Notification List Not found', payload:result});
+    }
+  } else {
+    res.json({status:0, message:'Missing Parameter!!!'});
+  }
+
+},
 
 
 // Update Device Token

@@ -5,8 +5,7 @@ var {authenticate} = require('./../middleware/authenticate');
 
 const education = require('./../controllers/educationVideo');
 
-
-router.post('/education_video_save',authenticate, education.videoSave)
+router.post('/education_video_save',authenticate, education.videoSave);
 
 router.get('/get_videos', authenticate, education.getVideos);
 
