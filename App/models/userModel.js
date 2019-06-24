@@ -38,28 +38,22 @@ const usersSchema = new Schema({
   specialist:{
      type:String,
      default:''
-  },
-  about:{
+  }, 
+   about:{
     type:String,
     default:''
-  },
+  }, 
   credentials: {
-    type: mongoose.Schema.Types.ObjectId,
-    //required: true,
-    ref:'Credential'
+    type: String
   },
   profilePic: {
-    type: String,
-  },
-  meeting_room:{
-    type: String,
-    default:'',
+    type: String
   },
   password: {
     type: String
   },
   type:{
-    type:Number, // type 1= Nurse, 2= Doctor, 0=contactProvider
+    type:Number, // type=0, users, 1 = contactProvider 
   },
   providerStatus:{
     type:String, // contact Provider providerStatus 1=Contact, 2 = Message, 3= Video call
@@ -74,6 +68,14 @@ const usersSchema = new Schema({
   deviceToken:{
     type: String,
     default: ''
+  },
+  iosVoipToken:{
+    type: String,
+    default: ''      // Ios Voip Token used for Calling on killed state application
+  },
+  deviceType:{
+    type: String,
+    default: ''   //android/ios
   },
   user_token:{
     type: String,
@@ -110,6 +112,12 @@ usersSchema.statics.findByToken = async function(token){
 usersSchema.methods.fetchByEmail = async function(){
   let user = this;
   return await User.findOne({email: user.email});
+}
+
+usersSchema.methods.AdminfetchByEmail = async function(){
+  let user = this;
+ 
+  return await User.findOne({email: user.email,type:3});
 }
 
 usersSchema.methods.fetchByMobileNo = async function(){

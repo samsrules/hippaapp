@@ -12,7 +12,6 @@ var url = `mongodb://127.0.0.1:27017/${process.env.MONGO_ATLAS_DB_NAME}`;
 //var url = `mongodb://127.0.0.1:27017/hippa_app`;
 if (process.env.DB_TYPE === "atlas") {
   url = `mongodb+srv://${process.env.MONGO_ATLAS_USERNAME}:${process.env.MONGO_ATLAS_PASSWORD}@${process.env.MONGO_ATLAS_CLUSTER_NAME}.mongodb.net/${process.env.MONGO_ATLAS_DB_NAME}?retryWrites=true`
-  // url="mongodb+srv://ezride:#EZR$111abc$#@euventures0-rppla.mongodb.net/ezeerider?retryWrites=true"
 }
 console.log(url);
 //require database URL from properties file

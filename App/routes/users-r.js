@@ -28,12 +28,7 @@ const errHandler = require('../helper/errorHandler')
 
 router.post('/user_register', multer().none(), user.userRegistration);
 router.post('/upload_documents', authenticate, upload.single('documents'), user.uploadDocuments);
-// router.post('/upload-documents', authenticate, (req, res) =>{
-    
-//     console.log(upload.single('documents'));
-//     console.log('body= '+JSON.stringify(req.body));
-//     console.log(upload);
-// });
+
 
 router.post('/signin', user.signIn);
 
@@ -63,9 +58,13 @@ router.delete('/delete_document', authenticate, user.deleteDocument);
 
 router.post('/update_device_token', authenticate, user.updateDeviceToken);
 
-router.post('/send_notifications', user.sendNotifications);
-
 router.post('/notifications', authenticate, user.getNotifcationList);
+
+router.get('/about', user.getPagesAbout);
+
+router.get('/terms-condition', user.getPagesTerms);
+
+router.get('/servey', user.userServey);
 
 router.get('', (req, res)=> {
     res.send('You are at right place, Welcome to Hippa App');

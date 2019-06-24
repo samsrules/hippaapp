@@ -1,6 +1,8 @@
 const User = require('./../models/userModel'), //Model
  Credential_type = require('../models/credential_m'); //Model
- Notification = require('../models/notifications_m');
+  Notification = require('../models/notifications_m');//Model
+  Pages = require('./../models/pages_m');
+  Servey = require('./../models/survey_m')
 
  bcrypt = require('bcrypt'),
  jwt = require('jsonwebtoken'),
@@ -12,10 +14,6 @@ const User = require('./../models/userModel'), //Model
 
 const nodemailer = require('nodemailer');
 const {ObjectID} = require('mongodb');
-
-var FCM = require('fcm-node');
-var serverKey = 'AAAALgE4Pu4:APA91bG7aGM3xFLqIetlsc-BOwx_vF91X8PA5rv4wgu0IFfVecr1CnxQaevFyX6tiPQ0usQmqJKQSpcnBOMuTUoujl-uV5a9gNetTlHa9rtNzFFLmknh6lC-ZyNL2xC9BJQ-NNABluED'; //put your server key here
-var fcm = new FCM(serverKey);
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -121,8 +119,8 @@ fetchUser : async (req, res) => {
 userRegistration : async (req, res) => {
      
       const user = new User({email:req.body.email});
-      console.log(user)
-      const allData = await user.fetchByEmail();
+
+      let emailCheck = await User.find({email:req.body.email});
      bcrypt.hash(req.body.password.toString(), 10, function(err, hash) {
     if (err) throw err;
         
@@ -143,7 +141,6 @@ userRegistration : async (req, res) => {
       html:
       '<!DOCTYPE html><head><title>Internal_email-29</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head><body style="margin:0; padding:0;" bgcolor="#eaeced"><table style="min-width:320px;" width="100%" cellspacing="0" cellpadding="0" bgcolor="#eaeced"><tr><td class="hide"><table width="600" cellpadding="0" cellspacing="0" style="width:600px !important;"><tr><td style="min-width:600px; font-size:0; line-height:0;">&nbsp;</td></tr></table></td></tr><tr><td class="wrapper" style="padding:0 10px;"><table data-module="module-3" data-thumb="thumbnails/03.png" width="100%" cellpadding="0" cellspacing="0"><tr><td data-bgcolor="bg-module" bgcolor="#eaeced"><table class="flexible" width="600" align="center" style="margin:0 auto;background: white;margin-top:30px;" cellpadding="0" cellspacing="0"><tr><td class="img-flex"><hr style="border:2px solid #00bbf2;width:500px; border-radius:30px;"></td></tr><tr><td data-bgcolor="bg-block" class="holder" style="padding:20px 50px 5px;" bgcolor="#ffffff"><table width="100%" cellpadding="0" cellspacing="0"><tr><td data-color="title" data-size="size title" data-min="20" data-max="40" data-link-color="link title color" data-link-style="text-decoration:none; color:#292c34;" class="title" style="font:30px/33px Arial, Helvetica, sans-serif; color:#292c34; padding:0 0 24px;"><h6 style="margin:0px;">Welcome to Hippa App!</h6><p style="font-size: 15px; line-height:20px;">It&apos;s official.>Register with Hippa App</a>  Your OTP is '+otp+'</p><p style="font-size: 15px; line-height:20px;"><br/>Thanks<br/>Team Hippa   </p></td></tr></table></td></tr><tr><td height="28"></td></tr></table></td></tr></table></td></tr></table></body></html>', 
   }
-
     transporter.sendMail(mailOptions).then(function(info) {
       resolve(info);
       console.log(info);
@@ -153,9 +150,12 @@ userRegistration : async (req, res) => {
         console.log('err')
     });
   });
-  
+      
+      
+      if (emailCheck.length>0) return res.status(200).send({ status: 0, message:"Email Id already exist." });
       res.json({message:"OTP Genearted Succesfully and also sent to mail.",status: 1,otp:otp,userInfo:userData});  
-    
+      
+
     }
     
   });
@@ -180,7 +180,7 @@ verifyOtp : async (req, res) => {
         email:req.body.email,
         type:0
        }
-       
+
      var userDataInfo = {};  
        
        var user = new User(userData);
@@ -203,13 +203,13 @@ verifyOtp : async (req, res) => {
 		        credentials: req.body.credentials,
 		        password: hash,
 		        email:req.body.email,
-		        type:0
+		        type:1
 		       }
 
 
              result.user_token = token;     
              result.save().then(() => {});
-             res.json({message:"Data Saved Succesfully",status: 1,userinfo:userDataInfo, token:token});
+             res.json({message:"Data Saved Succesfully",status: 1,userinfo:result, token:token});
              
            } catch(err) {
              res.status(203).send({ status: 0, message:"Oops Something went wrong.", description:err });
@@ -262,8 +262,7 @@ verifyOtpFP : async (req, res) => {
 }, // Verify OTP Closing
 
 resentOtp : async (req, res) => {
-  
-  var user = new User({
+	 var user = new User({
     email:req.body.email
   });
   user = await user.fetchByEmail();
@@ -290,12 +289,9 @@ resentOtp : async (req, res) => {
       return res.json({message:"Something went wrong in sending OTP.Please try after sometime.",status:0, description:error.message});
   }
 
-  
-
 }, // Resend OTP Closing
 
 forgotPassword : async (req, res) => {
-
   var user = new User({
     email:req.body.email
   });
@@ -315,9 +311,10 @@ forgotPassword : async (req, res) => {
   var from = '"Hippa App" <info@hippa.com>';
   
 
-     await sendmail(subject, to, from, html_body)
+  await sendmail(subject, to, from, html_body)
 
-    return res.json({message:"We have sent an OTP to your Email id. Please verify.",status:1,otp:otp});
+  
+   return res.json({message:"We have sent an OTP to your Email id. Please verify.",status:1,otp:otp});
   } catch (error) {
       console.log(error);
       return res.json({message:"Something went wrong in sending OTP.Please try after sometime.",status:0, description:error.message});
@@ -434,15 +431,18 @@ verifyEmail : async (req, res) => {
 userProfile : async (req, res) => {
   try {
     let userId = req.body._id;
+    console.log(userId)
      
     let user = new User({_id:userId});
-    let userData = user.fetchUser();
-      console.log(userData);
-    let profileData = new Object();
-    profileData.userName = user.userName;
+    let userData = await user.fetchUser();
+      
+    if(userData.profilePic){
+    	userData.profilePic = process.env.UPLOADURL+userData.profilePic
+    } else {
+    	userData.profilePic = ''
+    }
     
-    
-    res.json({status:1, message:'User Profile Data.',data:profileData});
+    res.json({status:1, message:'User Profile Data.',data:userData});
   } catch (error) {
     res.json({status:0, message:'User data not found', description:error.message});
   }
@@ -451,9 +451,7 @@ userProfile : async (req, res) => {
 
 getUserDetails : async (user_id) =>{
  
-  let userData1 = await User.aggregate().match({_id:ObjectID(user_id)})
-  .project({
-    fieldExists:{$cond:[{$eq:["$profilePic", null]}, false, true]},
+  let userData1 = await User.aggregate().match({_id:ObjectID(user_id)}).project({
     profilePic:{
       $concat: [process.env.UPLOADURL,'',"$profilePic"]
     },
@@ -464,31 +462,78 @@ getUserDetails : async (user_id) =>{
     type:"$type",
     credentials:"$credentials",
     userStatus:"$userStatus",
-    createdAt:"$createdAt",
-    da:"$users"
+    createdAt:"createdAt",
+    password:"$password"
   })
- 
   
-  let da = Object.assign({}, userData1);
+    let da = Object.assign({}, userData1);
   return da[0];
 
-},
+},//getUserDetails
+
 
 updateProfile : async (req, res) => {
-  let user_id = req.body.user_id;
+
+let user_id = req.body.user_id;
+
+    if(req.body.password && req.body.oldPassword) {
+
+      let userDetails =  await module.exports.getUserDetails(user_id);
+
+      bcrypt.compare(req.body.oldPassword, userDetails.password, async function(err, res1) {
+         if(res1==true) {
+          bcrypt.hash(req.body.password.toString(), 10, async function(err, hash) {
+           
+              
+              let da = await User.findByIdAndUpdate(user_id,{password:hash},{new: true, runValidators: true})
+               if(da.profilePic){
+                 da.profilePic = process.env.UPLOADURL+da.profilePic
+               } else {
+                da.profilePic = ''
+               }
+                  
+                if(da) {
+                   res.json({status:1, message:'Your Password has been updated successfully.',user_info:da});
+                } else {
+                   res.json({status:0, message:'Unable to update'});
+                }
+
+           })
+  
+         } else {
+          return res.status(200).send({ status: 0, auth: false, token: userDetails, message:"Wrong password entered." });
+         }
+         
+       })
+    } else {
+
+
   try {
     let userData = new Object();
-  
+
+    let userDetails =  await module.exports.getUserDetails(user_id);
+    console.log(userDetails);
      
     if(req.body.firstName) userData.firstName= req.body.firstName;
+    if(req.body.lastName) userData.lastName= req.body.lastName;
+  
+    
     if(req.body.lastName) userData.lastName = req.body.lastName;
+    
     if(req.body.credentials) userData.credentials= req.body.credentials;
     if(req.body.device_token) userData.deviceToken= req.body.device_token;
+    if(req.body.device_type) userData.deviceType= req.body.device_type;
     if(req.body.about) userData.about= req.body.about;
+    if(req.body.iosVoipToken) userData.iosVoipToken= req.body.iosVoipToken;
     if(req.body.user_id) userData.user_id = req.body.user_id
       
-       let da = await User.findByIdAndUpdate(user_id,userData,{new: true, runValidators: true})
-       
+    let da = await User.findByIdAndUpdate(user_id,userData,{new: true, runValidators: true})
+     if(da.profilePic){
+       da.profilePic = process.env.UPLOADURL+da.profilePic
+     } else {
+      da.profilePic = ''
+     }
+        
       if(da) {
         res.json({status:1, message:'Your profile has been updated successfully.',user_info:da});
     } else {
@@ -499,6 +544,9 @@ updateProfile : async (req, res) => {
   } catch (error) {
     res.json({status:0, message:'Unable to update', description:error.message});
   }
+
+}
+
   
 }, // Update User Profile Closing
 
@@ -526,7 +574,7 @@ updateProfilePic : async (req, res) => {
 
      let userDetails =  await module.exports.getUserDetails(user_id);
 
-      res.json({status:1, message:'Your profile pic has been updated successfully.',user_info: userDetails});
+      res.json({status:1, message:'Your profile picture has been updated successfully.',user_info: userDetails});
 
     } else {
       res.json({status:0, message:'missing Parameters'});
@@ -541,7 +589,7 @@ updateProfilePic : async (req, res) => {
 
 
 credentialSearch : async (req, res) => {
-    let search = req.query.search;
+      let search = req.query.search;
   
      if(req.query.search!='all') {
       if(search) {
@@ -554,7 +602,6 @@ credentialSearch : async (req, res) => {
       let credentials = await Credential_type.find({credential_type:{$ne:''}});
       res.json({status:1, message:'Credential_type all Found.',payload: credentials});
      }
-    
     
 },
 
@@ -601,7 +648,7 @@ conatactProviderSave : async (req, res) => {
             var token = jwt.sign({ id: result._id }, process.env.JWT_SECRET);
             result.user_token = token;     
             result.save().then(() => {});
-            res.json({status:1,message:'Contact Provider Register successfully.',payload:result})
+             res.json({status:1,message:'Contact Provider Register successfully.',payload:result})
             
           } catch(err) {
             res.status(203).send({ status: 0, message:"Oops Something went wrong.", description:err });
@@ -623,62 +670,64 @@ conatactProviderSave : async (req, res) => {
 
 },
 
-sendNotifications: async (req, res) =>{
 
-const fcm_token=req.body.token;
-  const alert_message=req.body.alert_message;
-   if(fcm_token && alert_message)
-   {
-    var data=req.body;
-    var message=alert_message;
-    var title="Hippa Push alerts";
-    var token=fcm_token;
-    var message = { 
-        to: token, 
-        notification: {
-            title: title, //title of notification 
-            body: message, //content of the notification
-            sound: "default",
-            icon: "https://dev.rymindr.com/images/logo_signup.png" //default notification icon
-        },
-        data: data //payload you want to send with your notification
-    };
-    fcm.send(message, function(err, response)
-    {
-        if (err) {
-            console.log("Notification not sent");
-            res.json({success:false})
+userSearch : async (req, res) => {
+  var keyword = req.body.search;
+  //var type = req.body.type;
+  try{ 
+     
+    var user = new User();
+        let users = await user.driverSearch(keyword);
+        // console.log(users.length)
+        var uniqueValues =[];
+        if(users.length>0) {
+            // Unique value get 
+          var uniqueData = Object.values(users.reduce((acc,cur)=>Object.assign(acc,{[cur._id]:cur}),{}));
+          var rating = rideRating();
+          for(var i = 0; i < uniqueData.length; i++) {
+            let rt= await rating.getAvgRatingUser(uniqueData[i]._id);
+            // driverDetails.rating = rt;
+            
+          let tempObj = {
+            _id:uniqueData[i]._id,
+            firstName:uniqueData[i].firstName,
+            lastName:uniqueData[i].lastName,
+            mobileNo:uniqueData[i].mobileNo
+          };
+          if(rt)
+          tempObj.ratings = rt;
+          if(uniqueData[i].profile_pic){
+            tempObj.profile_pic = process.env.UPLOADURL+uniqueData[i].profile_pic;
+          } else {
+          tempObj.profile_pic = uniqueData[i].profile_pic;
+          }
+          uniqueValues.push(tempObj);
+       }
+          
+          res.json({status:1, message:'Users Found.',profile_pic_url:process.env.UPLOADURL,data:uniqueValues});
+
         } else {
-            console.log("Successfully sent with response: ", response);
-            res.json({success:true})
+          res.json({status:0, message:'Result Not Found.',data:uniqueValues});
         }
-    });
-   } else {
-    response["data"] = {};
-    response["status"] = 0;
-    response["statuscode"] = 400;
-    response["message"] =
-      "Oops! Something went wrong. There was a problem with Hippa. Please try again";
-    return res.status(400).json(response);
+        
+  } catch(err){
+    res.json({status:0, message:'Oops something went wrong.', description:err.message});
   }
+  
+}, // User Search Closing
 
-
-},
 
 getNotifcationList: async(req, res) =>{
     
-  if(req.body.user_id) {
+      if(req.body.user_id) {
+        var user_id = req.body.user_id;
         
-
-         let result = await Notification.aggregate().project({
+         let result = await Notification.aggregate().match({notification_type:1,"notificationsUserids": {$in: [user_id]}}).project({
           fieldExists:{$cond:[{$eq:["$notify_image", null]}, false, true]},
-          notify_image:{
-            $concat:[process.env.UPLOADURL,'', "$notify_image"]
-          },
           title:"$title",
           content:"$content",
-          createdAt:{ $dateToString: { format: "%d-%m-%Y", date: "$createdAt" } }
-         })
+          createdAt:{ $dateToString: { format: "%d-%m-%Y %H:%M", date: "$createdAt" } }
+         }).sort({_id:-1})
          
         
 
@@ -690,6 +739,8 @@ getNotifcationList: async(req, res) =>{
   } else {
     res.json({status:0, message:'Missing Parameter!!!'});
   }
+
+ 
 
 },
 
@@ -784,6 +835,30 @@ deleteDocument : async (req, res) => {
   }else{
     res.json({status:0, message:'No document found for deletion.'});
   }
+},
+
+getPagesAbout : async (req, res) =>{
+  let result = await Pages.findOne({},'about')
+  if(result) {
+    res.render('about',result);
+  }
+},
+
+getPagesTerms : async (req, res) =>{
+  let result = await Pages.findOne({},'terms_condition')
+  console.log(result)
+  if(result) {
+    res.render('terms_condition',result);
+  }
+},
+
+userServey : async (req,res) =>{
+     let serveys = await Servey.findOne({servey_link:{$ne:''}}).sort({createdAt:-1});
+     if(serveys.servey_link) {
+       res.redirect(serveys.servey_link);
+     } else {
+        res.render('page_404');
+     } 
 }
 
 

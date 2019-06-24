@@ -1,13 +1,11 @@
 const educationVideo = require('./../models/educationVideo_m');
-
 _ = require('lodash');
 
 var youtubeThumbnail = require('youtube-thumbnail');
 
 
-
 module.exports={
-    videoSave : async (req, res) =>{
+     videoSave : async (req, res) =>{
       let video_url = req.body.video_url;
       if(video_url) {
           
